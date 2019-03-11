@@ -144,6 +144,19 @@ class TavosPy:
 
         #remove table header
         data.pop(0)
+        for dayData in data:
+            if(dayData['date']['start']):
+                if(dayData['date']['start'].year < 1900):
+                    if(dayData['date']['end'].year < 1900):
+                        dayData['date']['start'] = dayData['date']['start'].replace(year=1900)
+                    else: 
+                        dayData['date']['start'] = dayData['date']['start'].replace(year=dayData['date']['end'].year)
+            if(dayData['date']['end']):
+                if(dayData['date']['end'].year < 1900):
+                    if(dayData['date']['start'].year < 1900):
+                        dayData['date']['end'] = dayData['date']['end'].replace(year=1900)
+                    else: 
+                        dayData['date']['end'] = dayData['date']['end'].replace(year=dayData['date']['start'].year)
 
         self.setData(data)
         
@@ -196,4 +209,4 @@ class TavosPy:
             if(endDay != False and endMonth != False and endYear != False):
                 dates['end'] = datetime.datetime(int(endYear), int(endMonth), int(endDay))
 
-        return dates
+        return dates 
