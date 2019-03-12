@@ -37,10 +37,13 @@ class TavosPy:
         return self.data
 
     def updateHtml(self):
-        r = requests.get(self.getUrl())
-        if(r.status_code == 200):
-            self.sethtmlData(r.text)
-            return True
+        try:
+            r = requests.get(self.getUrl())
+            if(r.status_code == 200):
+                self.sethtmlData(r.text)
+                return True
+        except requests.exceptions.RequestException as e:
+            return False
         return False
 
     def updateData(self):
@@ -209,4 +212,4 @@ class TavosPy:
             if(endDay != False and endMonth != False and endYear != False):
                 dates['end'] = datetime.datetime(int(endYear), int(endMonth), int(endDay))
 
-        return dates 
+        return dates

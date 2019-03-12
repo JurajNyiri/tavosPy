@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="tavosPy",
-    version="0.1.2",
+    version="0.1.3",
     author="Juraj Nyíri",
     author_email="juraj.nyiri@gmail.com",
     description="Processes water outages from Tavos and provides them in a object with proper types",
