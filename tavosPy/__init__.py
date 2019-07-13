@@ -42,7 +42,7 @@ class TavosPy:
             if(r.status_code == 200):
                 self.sethtmlData(r.text)
                 return True
-        except requests.exceptions.RequestException as e:
+        except requests.exceptions.RequestException:
             return False
         return False
 
@@ -55,33 +55,43 @@ class TavosPy:
 
         data = []
         #Get proper date
+
+        tdChild = 2
+
         i = 0
-        for date in tag('td:nth-child(1)').items():
+        for date in tag('td:nth-child('+str(tdChild)+')').items():
             if(len(data) <= i or data[i] is None):
                 data.append({})
             data[i]['date'] = self.findDates(re.findall(pattern, date.text()))
+            print(data[i]['date'])
             i+=1
+            
+        tdChild+=1
 
         #Get city
         i = 0
-        for city in tag('td:nth-child(2)').items():
+        for city in tag('td:nth-child('+str(tdChild)+')').items():
             if(len(data) <= i or data[i] is None):
                 data.append({})
             data[i]['city'] = city.text()
             i+=1
 
+        tdChild+=1
+
         #Get street
         i = 0
-        for street in tag('td:nth-child(3)').items():
+        for street in tag('td:nth-child('+str(tdChild)+')').items():
             if(len(data) <= i or data[i] is None):
                 data.append({})
             data[i]['street'] = street.text()
             i+=1
 
+        tdChild+=1
+
         #Get time / date if specified
         i = 0
         time = False
-        for time in tag('td:nth-child(4)').items():
+        for time in tag('td:nth-child('+str(tdChild)+')').items():
             startHour = False
             startMinute = False
             endHour = False
@@ -129,17 +139,21 @@ class TavosPy:
                     data[i]['date']['end'] = data[i]['date']['end'].replace(hour=int(23), minute=int(59))
             i+=1
 
+        tdChild+=1
+
         #Get type of defect
         i = 0
-        for typeOfDefect in tag('td:nth-child(5)').items():
+        for typeOfDefect in tag('td:nth-child('+str(tdChild)+')').items():
             if(len(data) <= i or data[i] is None):
                 data.append({})
             data[i]['typeOfDefect'] = typeOfDefect.text()
             i+=1
 
+        tdChild+=1
+
         #Get notes
         i = 0
-        for note in tag('td:nth-child(6)').items():
+        for note in tag('td:nth-child('+str(tdChild)+')').items():
             if(len(data) <= i or data[i] is None):
                 data.append({})
             data[i]['notes'] = note.text()
