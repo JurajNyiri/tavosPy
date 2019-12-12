@@ -17,6 +17,8 @@ class TavosPy:
         self.htmlData = ""
         self.data = ""
 
+        self.maxSearchValue = 10
+
 
     def setUrl(self, url):
         self.url = url
@@ -46,138 +48,170 @@ class TavosPy:
             return False
         return False
 
-    def updateData(self):
+    def updateData(self, tdStart = 0, theBestDataFound = False, theBestDataCorrectness = False):
         pq = PyQuery(self.htmlData)
 
         tag = pq('div.article > table > tbody > tr').find('td')
 
         pattern = re.compile(r'(\d+)')
 
-        data = []
-        #Get proper date
+        tdChild = tdStart
 
-        tdChild = 2
+        try:
+            data = []
+            #Get proper date
 
-        i = 0
-        for date in tag('td:nth-child('+str(tdChild)+')').items():
-            if(len(data) <= i or data[i] is None):
-                data.append({})
-            data[i]['date'] = self.findDates(re.findall(pattern, date.text()))
-            print(data[i]['date'])
-            i+=1
-            
-        tdChild+=1
-
-        #Get city
-        i = 0
-        for city in tag('td:nth-child('+str(tdChild)+')').items():
-            if(len(data) <= i or data[i] is None):
-                data.append({})
-            data[i]['city'] = city.text()
-            i+=1
-
-        tdChild+=1
-
-        #Get street
-        i = 0
-        for street in tag('td:nth-child('+str(tdChild)+')').items():
-            if(len(data) <= i or data[i] is None):
-                data.append({})
-            data[i]['street'] = street.text()
-            i+=1
-
-        tdChild+=1
-
-        #Get time / date if specified
-        i = 0
-        time = False
-        for time in tag('td:nth-child('+str(tdChild)+')').items():
-            startHour = False
-            startMinute = False
-            endHour = False
-            endMinute = False
-
-            pattern = re.compile(r'(\d+):(\d+)')
-            matches = re.findall(pattern, time.text())
-            if(len(matches) > 0):
-                for hour,minute in matches:
-                    if(startHour == False or startMinute == False):
-                        startHour = hour
-                        startMinute = minute
-                    else:
-                        endHour = hour
-                        endMinute = minute
-                    if(len(data) <= i or data[i] is None):
-                        data.append({})
-
-
-            #Attempt to find end/start date from time, sometimes they list it there
-            pattern = re.compile(r'(\d+)\.(\d+)\.(\d+)')
-            matches = re.findall(pattern, time.text())
-            if(len(matches) >= 2):
-                for day, month, year in reversed(matches):
-                    data[i]['date']['end'] = datetime.datetime(int(year), int(month), int(day))
-                    break
+            i = 0
+            for date in tag('td:nth-child('+str(tdChild)+')').items():
+                if(len(data) <= i or data[i] is None):
+                    data.append({})
+                data[i]['date'] = self.findDates(re.findall(pattern, date.text()))
+                i+=1
                 
-                for day, month, year in (matches):
-                    data[i]['date']['start'] = datetime.datetime(int(year), int(month), int(day))
-                    break
+            tdChild+=1
 
-            if(startHour != False and startMinute != False and data[i]['date']['start'] != False):
-                data[i]['date']['start'] = data[i]['date']['start'].replace(hour=int(startHour), minute=int(startMinute))
-            if(endHour != False and endMinute != False):
-                if(data[i]['date']['end'] == False):
-                    if(data[i]['date']['start'] != False):
-                        data[i]['date']['end'] = data[i]['date']['start'].replace(hour=int(endHour), minute=int(endMinute))
-                else: 
-                    data[i]['date']['end'] = data[i]['date']['end'].replace(hour=int(endHour), minute=int(endMinute))
-            else:
-                if(data[i]['date']['end'] == False):
-                    if(data[i]['date']['start'] != False):
-                        data[i]['date']['end'] = data[i]['date']['start'].replace(hour=int(23), minute=int(59))
+            #Get city
+            i = 0
+            for city in tag('td:nth-child('+str(tdChild)+')').items():
+                if(len(data) <= i or data[i] is None):
+                    data.append({})
+                data[i]['city'] = city.text()
+                i+=1
+
+            tdChild+=1
+
+            #Get street
+            i = 0
+            for street in tag('td:nth-child('+str(tdChild)+')').items():
+                if(len(data) <= i or data[i] is None):
+                    data.append({})
+                data[i]['street'] = street.text()
+                i+=1
+
+            tdChild+=1
+
+            #Get time / date if specified
+            i = 0
+            time = False
+            for time in tag('td:nth-child('+str(tdChild)+')').items():
+                startHour = False
+                startMinute = False
+                endHour = False
+                endMinute = False
+
+                pattern = re.compile(r'(\d+):(\d+)')
+                matches = re.findall(pattern, time.text())
+                if(len(matches) > 0):
+                    for hour,minute in matches:
+                        if(startHour == False or startMinute == False):
+                            startHour = hour
+                            startMinute = minute
+                        else:
+                            endHour = hour
+                            endMinute = minute
+                        if(len(data) <= i or data[i] is None):
+                            data.append({})
+
+
+                #Attempt to find end/start date from time, sometimes they list it there
+                pattern = re.compile(r'(\d+)\.(\d+)\.(\d+)')
+                matches = re.findall(pattern, time.text())
+                if(len(matches) >= 2):
+                    for day, month, year in reversed(matches):
+                        data[i]['date']['end'] = datetime.datetime(int(year), int(month), int(day))
+                        break
+                    
+                    for day, month, year in (matches):
+                        data[i]['date']['start'] = datetime.datetime(int(year), int(month), int(day))
+                        break
+
+                if(startHour != False and startMinute != False and data[i]['date']['start'] != False):
+                    data[i]['date']['start'] = data[i]['date']['start'].replace(hour=int(startHour), minute=int(startMinute))
+                if(endHour != False and endMinute != False):
+                    if(data[i]['date']['end'] == False):
+                        if(data[i]['date']['start'] != False):
+                            data[i]['date']['end'] = data[i]['date']['start'].replace(hour=int(endHour), minute=int(endMinute))
+                    else: 
+                        data[i]['date']['end'] = data[i]['date']['end'].replace(hour=int(endHour), minute=int(endMinute))
                 else:
-                    data[i]['date']['end'] = data[i]['date']['end'].replace(hour=int(23), minute=int(59))
-            i+=1
+                    if(data[i]['date']['end'] == False):
+                        if(data[i]['date']['start'] != False):
+                            data[i]['date']['end'] = data[i]['date']['start'].replace(hour=int(23), minute=int(59))
+                    else:
+                        data[i]['date']['end'] = data[i]['date']['end'].replace(hour=int(23), minute=int(59))
+                i+=1
 
-        tdChild+=1
+            tdChild+=1
 
-        #Get type of defect
-        i = 0
-        for typeOfDefect in tag('td:nth-child('+str(tdChild)+')').items():
-            if(len(data) <= i or data[i] is None):
-                data.append({})
-            data[i]['typeOfDefect'] = typeOfDefect.text()
-            i+=1
+            #Get type of defect
+            i = 0
+            for typeOfDefect in tag('td:nth-child('+str(tdChild)+')').items():
+                if(len(data) <= i or data[i] is None):
+                    data.append({})
+                data[i]['typeOfDefect'] = typeOfDefect.text()
+                i+=1
 
-        tdChild+=1
+            tdChild+=1
 
-        #Get notes
-        i = 0
-        for note in tag('td:nth-child('+str(tdChild)+')').items():
-            if(len(data) <= i or data[i] is None):
-                data.append({})
-            data[i]['notes'] = note.text()
-            i+=1
+            #Get notes
+            i = 0
+            for note in tag('td:nth-child('+str(tdChild)+')').items():
+                if(len(data) <= i or data[i] is None):
+                    data.append({})
+                data[i]['notes'] = note.text()
+                i+=1
 
-        #remove table header
-        data.pop(0)
-        for dayData in data:
-            if(dayData['date']['start']):
-                if(dayData['date']['start'].year < 1900):
-                    if(dayData['date']['end'].year < 1900):
-                        dayData['date']['start'] = dayData['date']['start'].replace(year=1900)
-                    else: 
-                        dayData['date']['start'] = dayData['date']['start'].replace(year=dayData['date']['end'].year)
-            if(dayData['date']['end']):
-                if(dayData['date']['end'].year < 1900):
+            #remove table header
+            data.pop(0)
+            for dayData in data:
+                if(dayData['date']['start']):
                     if(dayData['date']['start'].year < 1900):
-                        dayData['date']['end'] = dayData['date']['end'].replace(year=1900)
-                    else: 
-                        dayData['date']['end'] = dayData['date']['end'].replace(year=dayData['date']['start'].year)
+                        if(dayData['date']['end'].year < 1900):
+                            dayData['date']['start'] = dayData['date']['start'].replace(year=1900)
+                        else: 
+                            dayData['date']['start'] = dayData['date']['start'].replace(year=dayData['date']['end'].year)
+                if(dayData['date']['end']):
+                    if(dayData['date']['end'].year < 1900):
+                        if(dayData['date']['start'].year < 1900):
+                            dayData['date']['end'] = dayData['date']['end'].replace(year=1900)
+                        else: 
+                            dayData['date']['end'] = dayData['date']['end'].replace(year=dayData['date']['start'].year)
+            
+            #analyze data set for the best accuracy
+            currentCorrectness = self.analyzeDataCorrectness(data)
 
+            if((not theBestDataFound or not theBestDataCorrectness) or currentCorrectness > theBestDataCorrectness):
+                theBestDataFound = data
+                theBestDataCorrectness = currentCorrectness
+            if(tdStart <= self.maxSearchValue):
+                return self.updateData(tdStart+1, theBestDataFound, theBestDataCorrectness)
+            else:
+                return self.finishUpdateData(theBestDataFound)
+        except:
+            if(tdStart > self.maxSearchValue):
+                return self.finishUpdateData(theBestDataFound)
+            return self.updateData(tdStart+1, theBestDataFound, theBestDataCorrectness)
+
+    def finishUpdateData(self, data):
         self.setData(data)
-        
         return len(data) > 0
+
+    def analyzeDataCorrectness(self, data):
+        correctness = 0
+        for entry in data:
+            if('date' in entry and 'start' in entry['date'] and entry['date']['start']):
+                correctness+=1
+            if('date' in entry and 'end' in entry['date'] and entry['date']['end']):
+                correctness+=1
+            if('city' in entry and entry['city'] and entry['city'] != ''):
+                correctness+=1
+            if('street' in entry and entry['street'] and entry['street'] != ''):
+                correctness+=1
+            if('typeOfDefect' in entry and entry['typeOfDefect'] and entry['typeOfDefect'] != ''):
+                correctness+=1
+            if('notes' in entry and entry['notes'] and entry['notes'] != ''):
+                correctness+=1
+        return correctness
 
     def update(self):
         return self.updateHtml() and self.updateData()
