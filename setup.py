@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="tavosPy",
-    version="0.2",
+    version="0.3",
     author="Juraj Nyíri",
     author_email="juraj.nyiri@gmail.com",
     description="Processes water outages from Tavos and provides them in a object with proper types",
@@ -13,10 +13,7 @@ setuptools.setup(
     long_description_content_type="text/markdown",
     url="https://github.com/JurajNyiri/tavosPy",
     packages=setuptools.find_packages(),
-    install_requires=[
-          'requests',
-          'pyquery'
-    ],
+    install_requires=["requests", "pyquery"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

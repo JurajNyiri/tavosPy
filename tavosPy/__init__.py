@@ -10,187 +10,155 @@ import re
 import datetime
 import requests
 
+
 class TavosPy:
     def __init__(self):
-        self.url = "http://www.tavos-as.sk/index.php?view=article&catid=121%3Aporuchova-sluba&id=1208%3Anahlasene-odstavky-vody&tmpl=component&print=1&layout=default&page=&option=com_content&Itemid=601"
+        self.url = "https://tavos.sk/nahlasene-odstavky-vody/"
 
         self.htmlData = ""
         self.data = ""
 
         self.maxSearchValue = 10
 
-
     def setUrl(self, url):
         self.url = url
-    
+
     def getUrl(self):
         return self.url
 
     def sethtmlData(self, data):
         self.htmlData = data
-    
+
     def gethtmlData(self):
         return self.htmlData
 
     def setData(self, data):
         self.data = data
-    
+
     def getData(self):
         return self.data
 
     def updateHtml(self):
         try:
             r = requests.get(self.getUrl())
-            if(r.status_code == 200):
+            if r.status_code == 200:
                 self.sethtmlData(r.text)
                 return True
         except requests.exceptions.RequestException:
             return False
         return False
 
-    def updateData(self, tdStart = 0, theBestDataFound = False, theBestDataCorrectness = False):
+    def updateData(
+        self, tdStart=0, theBestDataFound=False, theBestDataCorrectness=False
+    ):
         pq = PyQuery(self.htmlData)
+        tag = pq("div > table > tbody > tr").find("td")
 
-        tag = pq('div.article > table > tbody > tr').find('td')
-
-        pattern = re.compile(r'(\d+)')
+        pattern = re.compile(r"(\d+)")
 
         tdChild = tdStart
 
         try:
             data = []
-            #Get proper date
-
+            # Get start time
             i = 0
-            for date in tag('td:nth-child('+str(tdChild)+')').items():
-                if(len(data) <= i or data[i] is None):
+            for date in tag("td:nth-child(" + str(tdChild) + ")").items():
+                if len(data) <= i or data[i] is None:
                     data.append({})
-                data[i]['date'] = self.findDates(re.findall(pattern, date.text()))
-                i+=1
-                
-            tdChild+=1
+                data[i]["date"] = {}
+                data[i]["date"]["start"] = self.getTime(
+                    re.findall(pattern, date.text())
+                )
+                i += 1
 
-            #Get city
+            tdChild += 1
+            # Get city
             i = 0
-            for city in tag('td:nth-child('+str(tdChild)+')').items():
-                if(len(data) <= i or data[i] is None):
+            for city in tag("td:nth-child(" + str(tdChild) + ")").items():
+                if len(data) <= i or data[i] is None:
                     data.append({})
-                data[i]['city'] = city.text()
-                i+=1
+                data[i]["city"] = city.text()
+                i += 1
 
-            tdChild+=1
+            tdChild += 1
 
-            #Get street
+            # Get company
             i = 0
-            for street in tag('td:nth-child('+str(tdChild)+')').items():
-                if(len(data) <= i or data[i] is None):
+            for street in tag("td:nth-child(" + str(tdChild) + ")").items():
+                if len(data) <= i or data[i] is None:
                     data.append({})
-                data[i]['street'] = street.text()
-                i+=1
+                data[i]["company"] = street.text()
+                i += 1
 
-            tdChild+=1
+            tdChild += 1
 
-            #Get time / date if specified
+            # Get street
             i = 0
-            time = False
-            for time in tag('td:nth-child('+str(tdChild)+')').items():
-                startHour = False
-                startMinute = False
-                endHour = False
-                endMinute = False
-
-                pattern = re.compile(r'(\d+):(\d+)')
-                matches = re.findall(pattern, time.text())
-                if(len(matches) > 0):
-                    for hour,minute in matches:
-                        if(startHour == False or startMinute == False):
-                            startHour = hour
-                            startMinute = minute
-                        else:
-                            endHour = hour
-                            endMinute = minute
-                        if(len(data) <= i or data[i] is None):
-                            data.append({})
-
-
-                #Attempt to find end/start date from time, sometimes they list it there
-                pattern = re.compile(r'(\d+)\.(\d+)\.(\d+)')
-                matches = re.findall(pattern, time.text())
-                if(len(matches) >= 2):
-                    for day, month, year in reversed(matches):
-                        data[i]['date']['end'] = datetime.datetime(int(year), int(month), int(day))
-                        break
-                    
-                    for day, month, year in (matches):
-                        data[i]['date']['start'] = datetime.datetime(int(year), int(month), int(day))
-                        break
-
-                if(startHour != False and startMinute != False and data[i]['date']['start'] != False):
-                    data[i]['date']['start'] = data[i]['date']['start'].replace(hour=int(startHour), minute=int(startMinute))
-                if(endHour != False and endMinute != False):
-                    if(data[i]['date']['end'] == False):
-                        if(data[i]['date']['start'] != False):
-                            data[i]['date']['end'] = data[i]['date']['start'].replace(hour=int(endHour), minute=int(endMinute))
-                    else: 
-                        data[i]['date']['end'] = data[i]['date']['end'].replace(hour=int(endHour), minute=int(endMinute))
-                else:
-                    if(data[i]['date']['end'] == False):
-                        if(data[i]['date']['start'] != False):
-                            data[i]['date']['end'] = data[i]['date']['start'].replace(hour=int(23), minute=int(59))
-                    else:
-                        data[i]['date']['end'] = data[i]['date']['end'].replace(hour=int(23), minute=int(59))
-                i+=1
-
-            tdChild+=1
-
-            #Get type of defect
-            i = 0
-            for typeOfDefect in tag('td:nth-child('+str(tdChild)+')').items():
-                if(len(data) <= i or data[i] is None):
+            for street in tag("td:nth-child(" + str(tdChild) + ")").items():
+                if len(data) <= i or data[i] is None:
                     data.append({})
-                data[i]['typeOfDefect'] = typeOfDefect.text()
-                i+=1
+                data[i]["street"] = street.text()
+                i += 1
 
-            tdChild+=1
+            tdChild += 1
 
-            #Get notes
+            # Get end time
             i = 0
-            for note in tag('td:nth-child('+str(tdChild)+')').items():
-                if(len(data) <= i or data[i] is None):
+            for date in tag("td:nth-child(" + str(tdChild) + ")").items():
+                if len(data) <= i or data[i] is None:
                     data.append({})
-                data[i]['notes'] = note.text()
-                i+=1
+                data[i]["date"]["end"] = self.getTime(re.findall(pattern, date.text()))
+                i += 1
 
-            #remove table header
-            data.pop(0)
-            for dayData in data:
-                if(dayData['date']['start']):
-                    if(dayData['date']['start'].year < 1900):
-                        if(dayData['date']['end'].year < 1900):
-                            dayData['date']['start'] = dayData['date']['start'].replace(year=1900)
-                        else: 
-                            dayData['date']['start'] = dayData['date']['start'].replace(year=dayData['date']['end'].year)
-                if(dayData['date']['end']):
-                    if(dayData['date']['end'].year < 1900):
-                        if(dayData['date']['start'].year < 1900):
-                            dayData['date']['end'] = dayData['date']['end'].replace(year=1900)
-                        else: 
-                            dayData['date']['end'] = dayData['date']['end'].replace(year=dayData['date']['start'].year)
-            
-            #analyze data set for the best accuracy
+            tdChild += 1
+            # Get water import
+            i = 0
+            for waterImport in tag("td:nth-child(" + str(tdChild) + ")").items():
+                if len(data) <= i or data[i] is None:
+                    data.append({})
+                data[i]["waterImport"] = waterImport.text()
+                i += 1
+
+            tdChild += 1
+
+            # Get notes
+            i = 0
+            for note in tag("td:nth-child(" + str(tdChild) + ")").items():
+                if len(data) <= i or data[i] is None:
+                    data.append({})
+                data[i]["notes"] = note.text()
+                i += 1
+
+            tdChild += 1
+
+            # Get ID
+            i = 0
+            for note in tag("td:nth-child(" + str(tdChild) + ")").items():
+                if len(data) <= i or data[i] is None:
+                    data.append({})
+                data[i]["id"] = note.text()
+                i += 1
+
+            # analyze data set for the best accuracy
             currentCorrectness = self.analyzeDataCorrectness(data)
 
-            if((not theBestDataFound or not theBestDataCorrectness) or currentCorrectness > theBestDataCorrectness):
+            if (
+                not theBestDataFound or not theBestDataCorrectness
+            ) or currentCorrectness > theBestDataCorrectness:
                 theBestDataFound = data
                 theBestDataCorrectness = currentCorrectness
-            if(tdStart <= self.maxSearchValue):
-                return self.updateData(tdStart+1, theBestDataFound, theBestDataCorrectness)
+            if tdStart <= self.maxSearchValue:
+                return self.updateData(
+                    tdStart + 1, theBestDataFound, theBestDataCorrectness
+                )
             else:
                 return self.finishUpdateData(theBestDataFound)
-        except:
-            if(tdStart > self.maxSearchValue):
+        except Exception as e:
+            if tdStart > self.maxSearchValue:
                 return self.finishUpdateData(theBestDataFound)
-            return self.updateData(tdStart+1, theBestDataFound, theBestDataCorrectness)
+            return self.updateData(
+                tdStart + 1, theBestDataFound, theBestDataCorrectness
+            )
 
     def finishUpdateData(self, data):
         self.setData(data)
@@ -199,65 +167,64 @@ class TavosPy:
     def analyzeDataCorrectness(self, data):
         correctness = 0
         for entry in data:
-            if('date' in entry and 'start' in entry['date'] and entry['date']['start']):
-                correctness+=1
-            if('date' in entry and 'end' in entry['date'] and entry['date']['end']):
-                correctness+=1
-            if('city' in entry and entry['city'] and entry['city'] != ''):
-                correctness+=1
-            if('street' in entry and entry['street'] and entry['street'] != ''):
-                correctness+=1
-            if('typeOfDefect' in entry and entry['typeOfDefect'] and entry['typeOfDefect'] != ''):
-                correctness+=1
-            if('notes' in entry and entry['notes'] and entry['notes'] != ''):
-                correctness+=1
+            if "date" in entry and "start" in entry["date"] and entry["date"]["start"]:
+                correctness += 1
+            if "date" in entry and "end" in entry["date"] and entry["date"]["end"]:
+                correctness += 1
+            if "city" in entry and entry["city"] and entry["city"] != "":
+                correctness += 1
+            if "street" in entry and entry["street"] and entry["street"] != "":
+                correctness += 1
+            if (
+                "waterImport" in entry
+                and entry["waterImport"]
+                and entry["waterImport"] != ""
+            ):
+                correctness += 1
+            if "company" in entry and entry["company"] and entry["company"] != "":
+                correctness += 1
+            if "notes" in entry and entry["notes"] and entry["notes"] != "":
+                correctness += 1
+            if "id" in entry and entry["id"] and entry["id"] != "":
+                correctness += 1
         return correctness
 
     def update(self):
         return self.updateHtml() and self.updateData()
 
-    #try and detect proper start and end date from sequence of numbers
-    def findDates(self, numbers):
-        dates = {}
-        dates['start'] = False
-        dates['end'] = False
+    def getTime(self, numbers):
+        date = False
 
-        if(len(numbers) > 0):
+        if len(numbers) > 0:
 
-            startDay = False
-            startMonth = False 
-            startYear = False
+            day = False
+            month = False
+            year = False
 
-            endDay = False
-            endMonth = False
-            endYear = False
+            minute = False
+            second = False
 
             for number in numbers:
-                if(len(number) <= 2):
-                    if(startDay == False):
-                        startDay = number
-                    elif(startMonth == False):
-                        startMonth = number
-                    elif(endDay == False):
-                        endDay = number
-                    elif(endMonth == False):
-                        endMonth = number
-                elif(len(number) == 4):
-                    if(endDay == False):
-                        startYear = number
-                    else:
-                        endYear = number
+                if len(number) <= 2:
+                    if day == False:
+                        day = number
+                    elif month == False:
+                        month = number
+                    elif minute == False:
+                        minute = number
+                    elif second == False:
+                        second = number
+                elif len(number) == 4:
+                    year = number
 
-
-            if(endDay != False):
-                if(endYear == False and startYear != False):
-                    endYear = startYear
-                elif(startYear == False and endYear != False):
-                    startYear = endYear
-
-            if(startDay != False and startMonth != False and startYear != False):
-                dates['start'] = datetime.datetime(int(startYear), int(startMonth), int(startDay))
-            if(endDay != False and endMonth != False and endYear != False):
-                dates['end'] = datetime.datetime(int(endYear), int(endMonth), int(endDay))
-
-        return dates
+            if (
+                day != False
+                and month != False
+                and year != False
+                and minute != False
+                and second != False
+            ):
+                date = datetime.datetime(
+                    int(year), int(month), int(day), int(minute), int(second),
+                )
+        return date
