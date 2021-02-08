@@ -52,6 +52,9 @@ class TavosPy:
         self, tdStart=0, theBestDataFound=False, theBestDataCorrectness=False
     ):
         pq = PyQuery(self.htmlData)
+
+        lastUpdate = pq(".elementor-shortcode").find("p").text()
+
         tag = pq("div > table > tbody > tr").find("td")
 
         pattern = re.compile(r"(\d+)")
@@ -59,14 +62,16 @@ class TavosPy:
         tdChild = tdStart
 
         try:
-            data = []
+            data = {}
+            data["updated"] = lastUpdate
+            data["outages"] = []
             # Get start time
             i = 0
             for date in tag("td:nth-child(" + str(tdChild) + ")").items():
-                if len(data) <= i or data[i] is None:
-                    data.append({})
-                data[i]["date"] = {}
-                data[i]["date"]["start"] = self.getTime(
+                if len(data["outages"]) <= i or data["outages"][i] is None:
+                    data["outages"].append({})
+                data["outages"][i]["date"] = {}
+                data["outages"][i]["date"]["start"] = self.getTime(
                     re.findall(pattern, date.text())
                 )
                 i += 1
@@ -75,9 +80,9 @@ class TavosPy:
             # Get city
             i = 0
             for city in tag("td:nth-child(" + str(tdChild) + ")").items():
-                if len(data) <= i or data[i] is None:
-                    data.append({})
-                data[i]["city"] = city.text()
+                if len(data["outages"]) <= i or data["outages"][i] is None:
+                    data["outages"].append({})
+                data["outages"][i]["city"] = city.text()
                 i += 1
 
             tdChild += 1
@@ -85,9 +90,9 @@ class TavosPy:
             # Get company
             i = 0
             for street in tag("td:nth-child(" + str(tdChild) + ")").items():
-                if len(data) <= i or data[i] is None:
-                    data.append({})
-                data[i]["company"] = street.text()
+                if len(data["outages"]) <= i or data["outages"][i] is None:
+                    data["outages"].append({})
+                data["outages"][i]["company"] = street.text()
                 i += 1
 
             tdChild += 1
@@ -95,9 +100,9 @@ class TavosPy:
             # Get street
             i = 0
             for street in tag("td:nth-child(" + str(tdChild) + ")").items():
-                if len(data) <= i or data[i] is None:
-                    data.append({})
-                data[i]["street"] = street.text()
+                if len(data["outages"]) <= i or data["outages"][i] is None:
+                    data["outages"].append({})
+                data["outages"][i]["street"] = street.text()
                 i += 1
 
             tdChild += 1
@@ -105,18 +110,20 @@ class TavosPy:
             # Get end time
             i = 0
             for date in tag("td:nth-child(" + str(tdChild) + ")").items():
-                if len(data) <= i or data[i] is None:
-                    data.append({})
-                data[i]["date"]["end"] = self.getTime(re.findall(pattern, date.text()))
+                if len(data["outages"]) <= i or data["outages"][i] is None:
+                    data["outages"].append({})
+                data["outages"][i]["date"]["end"] = self.getTime(
+                    re.findall(pattern, date.text())
+                )
                 i += 1
 
             tdChild += 1
             # Get water import
             i = 0
             for waterImport in tag("td:nth-child(" + str(tdChild) + ")").items():
-                if len(data) <= i or data[i] is None:
-                    data.append({})
-                data[i]["waterImport"] = waterImport.text()
+                if len(data["outages"]) <= i or data["outages"][i] is None:
+                    data["outages"].append({})
+                data["outages"][i]["waterImport"] = waterImport.text()
                 i += 1
 
             tdChild += 1
@@ -124,9 +131,9 @@ class TavosPy:
             # Get notes
             i = 0
             for note in tag("td:nth-child(" + str(tdChild) + ")").items():
-                if len(data) <= i or data[i] is None:
-                    data.append({})
-                data[i]["notes"] = note.text()
+                if len(data["outages"]) <= i or data["outages"][i] is None:
+                    data["outages"].append({})
+                data["outages"][i]["notes"] = note.text()
                 i += 1
 
             tdChild += 1
@@ -134,13 +141,13 @@ class TavosPy:
             # Get ID
             i = 0
             for note in tag("td:nth-child(" + str(tdChild) + ")").items():
-                if len(data) <= i or data[i] is None:
-                    data.append({})
-                data[i]["id"] = note.text()
+                if len(data["outages"]) <= i or data["outages"][i] is None:
+                    data["outages"].append({})
+                data["outages"][i]["id"] = note.text()
                 i += 1
 
-            # analyze data set for the best accuracy
-            currentCorrectness = self.analyzeDataCorrectness(data)
+            # analyze data["outages"] set for the best accuracy
+            currentCorrectness = self.analyzeDataCorrectness(data["outages"])
 
             if (
                 not theBestDataFound or not theBestDataCorrectness
