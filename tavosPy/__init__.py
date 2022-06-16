@@ -168,6 +168,16 @@ class TavosPy:
             )
 
     def finishUpdateData(self, data):
+        properOutages = []
+        for outage in data["outages"]:
+            if not (
+                not "street" in outage
+                or "notes" not in outage
+                or "waterImport" not in outage
+                or "id" not in outage
+            ):
+                properOutages.append(outage)
+        data["outages"] = properOutages
         self.setData(data)
         return len(data) > 0
 
